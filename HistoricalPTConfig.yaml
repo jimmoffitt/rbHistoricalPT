@@ -1,0 +1,9 @@
+#These are account related.
+config:
+  account_name: <account_name>  #Used in URL for Historical API.
+  user_name: <user_name>
+  password_encoded: <pAsSwOrDeNcOdEd>
+  stream_label: prod
+  base_output_folder: ./output #Root folder for downloaded files.
+  friendly_folder_names: true  #converts title into folder name by removing whitespace
+

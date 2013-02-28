@@ -1,0 +1,6 @@
+rules:
+  - value  : (contains:wxreport) (bounding_box:[-86.2 38.0 -85.743 38.35] OR bounding_box:[-85.743 38.0 -85.286 38.35] OR bounding_box:[-86.2 38.35 -85.743 38.7] OR bounding_box:[-85.743 38.35 -85.286 38.7])
+    tag    : wxreport-louisville
+  - value  : (contains:rain OR storm OR weather OR downpour OR contains:flood) (bounding_box:[-86.2 38.0 -85.743 38.35] OR bounding_box:[-85.743 38.0 -85.286 38.35] OR bounding_box:[-86.2 38.35 -85.743 38.7] OR bounding_box:[-85.743 38.35 -85.286 38.7])
+    tag    : weather-term-louisville
+
