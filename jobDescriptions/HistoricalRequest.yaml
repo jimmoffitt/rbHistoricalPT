@@ -1,0 +1,27 @@
+#These attributes combine to define a Historical Job.
+job:
+  #These will change from request to request.
+  title: Louisville Rain Events - Spring 2012
+  from_date: 201203010500
+  #to_date: 201106010500
+  to_date: 201206010500
+  #These are 'static' values (more or less).
+  service_name: gnip
+  #These are optional, since they are defaults in code.
+  publisher: twitter
+  stream_type: track
+  data_format: activity-streams
+
+#File with YAML-formatted rules.
+rules_file: ./rules/louRain_flood.rules
+#rules_file: ./rules/louRain_flood.json
+
+#Possible states:
+# - new
+# - estimating
+# - quoted
+# - accepted/rejected
+# - running
+# - finished
+
+
