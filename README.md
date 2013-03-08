@@ -1,3 +1,21 @@
+   Usage
+    =====
+
+    Two files passed in at command-line if you are running this code as a script (and not building some wrapper
+    around the PtHistoricalJob class):
+
+    1) A configuration file with account/username/password details (see below, or the sample project file, for details):
+        -c "./HistoricalPTConfig.yaml"
+
+    2) A job description file (see below, or the sample project file, for details):
+        -j "./jobDescriptions/HistoricalRequest.yaml"
+
+    So, if you were running from a directory with this source file in it, with the configuration file in that folder too,
+    and the job description file in a "jobDescription" sub-directory, the command-line would look like this:
+
+            $ruby ./pt_historical.rb -c "./HistoricalPTConfig.yaml" -j "./jobDescriptions/HistoricalRequest.yaml"
+
+
     Introduction
     ============
 
