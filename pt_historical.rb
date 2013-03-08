@@ -20,6 +20,18 @@
 
             $ruby ./pt_historical.rb -c "./HistoricalPTConfig.yaml" -j "./jobDescriptions/HistoricalRequest.yaml"
 
+    After a job has been quoted, the this script has an additional "accept" parameter that needs to be set.
+
+        To accept a job:
+            $ruby ./pt_historical.rb -c "./HistoricalPTConfig.yaml" -j "./jobDescriptions/HistoricalRequest.yaml" -a true
+
+        To reject a job:
+            $ruby ./pt_historical.rb -c "./HistoricalPTConfig.yaml" -j "./jobDescriptions/HistoricalRequest.yaml" -a false
+
+    If the "accept" parameter is set to "true" or "false" before a job has been quoted, it will be ignored.
+
+    Note: once a job has been accepted and launched, it can not be stopped.
+
 
     Introduction
     ============
@@ -51,7 +63,7 @@
             Running
             Finished
 
-    The first step is submitting a Historical Job description. These job descriptions are formatted in JSON and
+    The first step is submitting a Historical job description. These job descriptions are formatted in JSON and
     include a title, the date range of interest, the output format, and a rules file.  This script loads these
     details from a YAML file.  For this example code the job description file is named HistoricalRequest.yaml.
     Again, you can name these job description files as you want and pass it in as the second argument when creating
@@ -63,9 +75,9 @@
     rules from scratch or converting from another source.  The JSON format is handy when you are pulling rules from
     another PowerTrack stream.
 
-    This script encodes the Job description in JSON and posts it to your Historical PowerTrack HTTP end-point.  If the
-    job is successfully submitted (description is correctly specified and your account credentials are valid), the
-    job enters the estimation stage.
+    This script encodes the Job description in JSON and posts it to your Historical PowerTrack HTTP end-point as part of
+    the job description.  If the job is successfully submitted (description is correctly specified and your account
+    credentials are valid), the job enters the estimation stage.
 
     The estimate can take many minutes to complete.  This script will loop, checking the estimation status every
     5 minutes until the estimate is ready.
@@ -80,6 +92,8 @@
         Note: if you are test-driving Historical PowerTrack (or "trialing"), job acceptance/rejection
         will be a manual process (by Gnip staff) and can not be automated via the Historical PowerTrack API. Once
         you are in a subscription or on-demand contract, you'll be able to automate this approval process.
+
+        Job are accepted or rejected by passing in an "accept" boolean parameter.
 
     If a job is accepted, the Job is launched and enters the "running" stage.  While a job is running, the actual data
     that matching the job's rules is extracted from the archives.  This process can take many hours to complete.  This
@@ -292,17 +306,33 @@ class PtREST
         @password = Base64.decode64(@password_encoded)
     end
 
-    #Helper function for building URL ================================================================================
+    #Helper functions for building URLs ================================================================================
 
     def getHistoricalURL(account_name=nil)
-        @url = "https://historical.gnip.com:443/accounts/"
+        @url = "https://historical.gnip.com:443/accounts/" #Root url for Historical PowerTrack API.
 
-        #TODO: error handling if there is no account_name available.
-
-        if not account_name.nil? then
+        if account_name.nil? then #using object account_name attribute.
+            if @account_name.nil?
+                p "No account name set.  Can not set url."
+            else
+                @url = @url + @account_name + "/jobs.json"
+            end
+        else #account_name passed in, so use that...
             @url = @url + account_name + "/jobs.json"
-        else
-            @url = @url + @account_name + "/jobs.json"
+        end
+    end
+
+    def getRehydrationURL(account_name=nil)
+        @url = "https://rehydration.gnip.com:443/accounts/"  #Root url for Rehydration PowerTrack.
+
+        if account_name.nil? then #using object account_name attribute.
+            if @account_name.nil?
+                p "No account name set.  Can not set url."
+            else
+                @url = @url + @account_name + "/publishers/twitter/rehydration/activities.json?ids="
+            end
+        else #account_name passed in, so use that...
+            @url = @url + account_name + "/publishers/twitter/rehydration/activities.json?ids="
         end
     end
 
@@ -372,7 +402,7 @@ end
 
 class JobDescription
 
-    attr_accessor :title, :to_date, :from_date, :stream_type, :rules_file, :rules, :service_name,
+    attr_accessor :title, :to_date, :from_date, :rules_file, :rules, :service_name,
                   :publisher, :stream_type, :data_format
 
     def initialize
@@ -439,13 +469,23 @@ end #Job class.
 class PtHistoricalJob
 
     attr_accessor :http, :job, :uuid, :base_url, :url, :job_url, :account_name, :user_name, :password_encoded,
-                  :stream_label, :base_output_folder, :output_folder, :friendly_folder_names,
-                  :quote, :results
+                  :stream_type, :base_output_folder, :output_folder, :friendly_folder_names,
+                  :quote, :results, :accept
 
-    def initialize(account_details_file, job_description_file)
+    def initialize(account_details_file, job_description_file, accept=nil)
         #class variables.
         @@base_url = "https://historical.gnip.com/accounts/"
         @@output_folder = "./output"
+
+        if accept.nil? #Client did not explicitly set 'accept' so set to false (reject).
+            @accept = nil
+        else
+            if accept == "true" then
+                @accept = true
+            else
+                @accept = false
+            end
+        end
 
         getSystemConfig(account_details_file)  #Load the oHistorical PowerTrack account details.
 
@@ -482,7 +522,7 @@ class PtHistoricalJob
             @password_encoded = Base64.encode64(@password)
         end
 
-        @stream_label = config["config"]["stream_label"]
+        @stream_type = config["config"]["stream_type"]
         @base_output_folder = config["config"]["base_output_folder"]
         @friendly_folder_names = config["config"]["friendly_folder_names"]
     end
@@ -988,6 +1028,7 @@ class PtHistoricalJob
         #Confirm job was submitted OK, ask the PowerTrack server again...
         #Whether this is a new job, or one already submitted, determine the Job UUID for current job.
         if status.name == "new" then
+            @accept = nil #New jobs should always have accept=nil (regardless of what was passed in)
             response = @http.GET #Get the job list again, confirm it was submitted OK, and lead us to the uuid.
             jobList = response.body
             #TODO: confirm the current job is in list.
@@ -1005,6 +1046,7 @@ class PtHistoricalJob
         status = getStatus(jobInfo)
 
         if status.name == "estimating" then  #loop until the estimate is finished and we've moved to "quoted"
+            @accept = nil #New jobs should always have accept=nil (regardless of what was passed in)
             #Check to see if estimation is finished.  If not pause 5 minutes and recheck
             until status.name == "quoted"
                 p "Estimate not ready yet, sleeping for 5 minutes..."
@@ -1016,31 +1058,45 @@ class PtHistoricalJob
         end
 
         '''
-        At this point the job has been quoted and is ready for approval or rejection.
-        Therefore, there should be some mechanism to review the job quote details.
-        In a system with a UI, the job quote would be presented for review.
-        In this case we are just coding the acceptance (or rejection) of the job
+        At this point the job has been quoted and is ready for approval or rejection.  Therefore, there should be some
+        mechanism to review the job quote details.  In a system with a UI, the job quote would be presented for review.
 
-        IMPORTANT NOTE: during Historical PowerTrack trials, the accept/reject process is
-        not enabled through the API.  Instead Gnip will need to perform this manually.
-        After an account becomes live with a subscription, then jobs can be accepted/rejected
-        using the API.
+        There is an "accept" parameter passed into this script.  If accept is set to "true", and the job has been
+        quoted, then it will charge ahead and run the job.  If "accept" is set to "true" and the quote has not been
+        generated, the accept=true will be ignored.
+
+        IMPORTANT NOTE: during Historical PowerTrack trials, the accept/reject process is not enabled through the API.
+        Instead Gnip will need to perform this manually. After an account becomes live with a subscription, then jobs
+        can be accepted/rejected using the API.
         '''
 
         if status.name == "quoted" then
             #Display the quote
             setQuoteDetails(jobInfo)
-            p "Job has been quoted. | " + @quote.to_s
+            p "Job (" + @job.title + ") has been quoted. | " + @quote.to_s
 
-            #Accept or Reject Job.
-            response = @http.PUT(acceptJob.to_s) #Accept job.
-            if response.code.to_i >= 200 and response.code.to_i < 300 then
-                status.name = "accepted"
-            else
-                p "Job could not be accepted. "
+            if @accept then
+                #Accept Job.
+                response = @http.PUT(acceptJob) #Accept job.
+                if response.code.to_i >= 200 and response.code.to_i < 300 then
+                    status.name = "accepted"
+                    p "Job (" + @job.title + ") was ACCEPTED."
+                else
+                    p "Error occurred.  Job (" + @job.title + ") could not be accepted. "
+                end
+            elsif @accept == nil
+                p "Job (" + @job.title + ") has been quoted, and needs to be ACCEPTED or REJECTED. "
+                p "Script can be reran with '-a true' or -a false'"
+            elsif not @accept
+                response = @http.PUT(rejectJob) #Reject job.
+                if response.code.to_i >= 200 and response.code.to_i < 300 then
+                    status.name = "rejected"
+                    p "Job (" + @job.title + ") was REJECTED."
+                else
+                    p "ERROR occurred.  Job (" + @job.title + ") could not be rejected (but still at 'quoted' stage). "
+                end
+
             end
-            #response = @oHTTP.POST(rejectJob) #Reject job.
-            #status.name = "rejected"
         end
 
         #If accepted, monitor status of Job completion.
@@ -1066,9 +1122,11 @@ class PtHistoricalJob
             uncompressData
 
             #Code to load into database
+            #oDB = PtDB.new
 
         end
     end
+
 
 end #PtHistorical class.
 
@@ -1082,6 +1140,7 @@ if __FILE__ == $0  #This script code is executed when running this file.
     OptionParser.new do |o|
         o.on('-c CONFIG') { |config| $config = config}
         o.on('-j JOB') { |job| $job = job}
+        o.on('-a ACCEPT') { |accept| $accept = accept}  #Pass in accept = true/false, otherwise stop at quote and display it.
         o.parse!
     end
 
@@ -1093,10 +1152,13 @@ if __FILE__ == $0  #This script code is executed when running this file.
         $job = "./jobDescriptions/HistoricalRequest.yaml" #Default
     end
 
-
     #Create a Historical PowerTrack object, passing in an account configuration file and a job description file.
-    oHistPT = PtHistoricalJob.new($config, $job)
+    oHistPT = PtHistoricalJob.new($config, $job, $accept)
 
     #The "do all" method, utilizes many other methods to complete a job.
     p oHistPT.manageJob
+
+    p "Exiting"
+
+
 end
