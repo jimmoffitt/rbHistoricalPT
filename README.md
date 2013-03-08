@@ -1,4 +1,4 @@
-   Usage
+    Usage
     =====
 
     Two files passed in at command-line if you are running this code as a script (and not building some wrapper
@@ -14,6 +14,18 @@
     and the job description file in a "jobDescription" sub-directory, the command-line would look like this:
 
             $ruby ./pt_historical.rb -c "./HistoricalPTConfig.yaml" -j "./jobDescriptions/HistoricalRequest.yaml"
+
+    After a job has been quoted, the this script has an additional "accept" parameter that needs to be set.
+
+        To accept a job:
+            $ruby ./pt_historical.rb -c "./HistoricalPTConfig.yaml" -j "./jobDescriptions/HistoricalRequest.yaml" -a true
+
+        To reject a job:
+            $ruby ./pt_historical.rb -c "./HistoricalPTConfig.yaml" -j "./jobDescriptions/HistoricalRequest.yaml" -a false
+
+    If the "accept" parameter is set to "true" or "false" before a job has been quoted, it will be ignored.
+
+    Note: once a job has been accepted and launched, it can not be stopped.
 
 
     Introduction
@@ -46,7 +58,7 @@
             Running
             Finished
 
-    The first step is submitting a Historical Job description. These job descriptions are formatted in JSON and
+    The first step is submitting a Historical job description. These job descriptions are formatted in JSON and
     include a title, the date range of interest, the output format, and a rules file.  This script loads these
     details from a YAML file.  For this example code the job description file is named HistoricalRequest.yaml.
     Again, you can name these job description files as you want and pass it in as the second argument when creating
@@ -58,9 +70,9 @@
     rules from scratch or converting from another source.  The JSON format is handy when you are pulling rules from
     another PowerTrack stream.
 
-    This script encodes the Job description in JSON and posts it to your Historical PowerTrack HTTP end-point.  If the
-    job is successfully submitted (description is correctly specified and your account credentials are valid), the
-    job enters the estimation stage.
+    This script encodes the Job description in JSON and posts it to your Historical PowerTrack HTTP end-point as part of
+    the job description.  If the job is successfully submitted (description is correctly specified and your account
+    credentials are valid), the job enters the estimation stage.
 
     The estimate can take many minutes to complete.  This script will loop, checking the estimation status every
     5 minutes until the estimate is ready.
@@ -75,6 +87,8 @@
         Note: if you are test-driving Historical PowerTrack (or "trialing"), job acceptance/rejection
         will be a manual process (by Gnip staff) and can not be automated via the Historical PowerTrack API. Once
         you are in a subscription or on-demand contract, you'll be able to automate this approval process.
+
+        Job are accepted or rejected by passing in an "accept" boolean parameter.
 
     If a job is accepted, the Job is launched and enters the "running" stage.  While a job is running, the actual data
     that matching the job's rules is extracted from the archives.  This process can take many hours to complete.  This
