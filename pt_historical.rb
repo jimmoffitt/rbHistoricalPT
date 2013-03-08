@@ -3,6 +3,24 @@
 
 =begin
 
+    Usage
+    =====
+
+    Two files passed in at command-line if you are running this code as a script (and not building some wrapper
+    around the PtHistoricalJob class):
+
+    1) A configuration file with account/username/password details (see below, or the sample project file, for details):
+        -c "./HistoricalPTConfig.yaml"
+
+    2) A job description file (see below, or the sample project file, for details):
+        -j "./jobDescriptions/HistoricalRequest.yaml"
+
+    So, if you were running from a directory with this source file in it, with the configuration file in that folder too,
+    and the job description file in a "jobDescription" sub-directory, the command-line would look like this:
+
+            $ruby ./pt_historical.rb -c "./HistoricalPTConfig.yaml" -j "./jobDescriptions/HistoricalRequest.yaml"
+
+
     Introduction
     ============
 
@@ -173,6 +191,7 @@ require "json"          #PowerTrack speaks json.
 require "yaml"          #Used for configuration, job and rules files.
 require "base64"        #Basic encoding of passwords.
 require "ostruct"       #Lightweight object.attribute helper.  Used for status structure.
+require "optparse"
 
 
 class PtRules
@@ -209,7 +228,6 @@ class PtRules
         rulesPayload[:rules] = @rules
         rulesPayload.to_json
     end
-=begin
     def getArray
         @rules
     end
@@ -217,7 +235,6 @@ class PtRules
     def getHash
         @rules
     end
-=end
 
     #Methods for loading rules from files ==============================================================================
 
@@ -459,6 +476,12 @@ class PtHistoricalJob
         @account_name = config["config"]["account_name"]
         @user_name  = config["config"]["user_name"]
         @password_encoded = config["config"]["password_encoded"]
+
+        if @password_encoded.nil? then  #User is passing in plain-text password...
+            @password = config["config"]["password"]
+            @password_encoded = Base64.encode64(@password)
+        end
+
         @stream_label = config["config"]["stream_label"]
         @base_output_folder = config["config"]["base_output_folder"]
         @friendly_folder_names = config["config"]["friendly_folder_names"]
@@ -658,7 +681,7 @@ class PtHistoricalJob
                  #load the @title job
                 jobs = JSON.parse(jobInfo)
                 jobs = jobs["jobs"]
-                p jobs.length
+                #p jobs.length
                 jobs.each { |job|
 
                     if job["title"] == @job.title then
@@ -909,16 +932,10 @@ class PtHistoricalJob
     def acceptJob
         "{\"status\":\"accept\"}"
 
-
-        #data = {}
-        #data["status"] = "accept"
-        #data.to_json
     end
 
     def rejectJob
         "{\"status\":\"reject\"}"
-        #reject = "{\"status\":\"reject\"}"
-        #reject.to_json
     end
 
     '''
@@ -954,7 +971,8 @@ class PtHistoricalJob
         p "Status of " + @job.title + " job: " + status.to_s
 
         if status.name == "error" then
-            p
+            p "ERROR occurred with your Historical Job request. Quitting"
+            exit(status = false)
         end
 
 
@@ -1061,8 +1079,23 @@ end #PtHistorical class.
 
 if __FILE__ == $0  #This script code is executed when running this file.
 
+    OptionParser.new do |o|
+        o.on('-c CONFIG') { |config| $config = config}
+        o.on('-j JOB') { |job| $job = job}
+        o.parse!
+    end
+
+    if $config.nil? then
+        $config = "./HistoricalPTConfig.yaml"  #Default
+    end
+
+    if $job.nil? then
+        $job = "./jobDescriptions/HistoricalRequest.yaml" #Default
+    end
+
+
     #Create a Historical PowerTrack object, passing in an account configuration file and a job description file.
-    oHistPT = PtHistoricalJob.new("./HistoricalPTConfig_private.yaml", "./jobDescriptions/TestJob.yaml")
+    oHistPT = PtHistoricalJob.new($config, $job)
 
     #The "do all" method, utilizes many other methods to complete a job.
     p oHistPT.manageJob
