@@ -141,6 +141,7 @@
             account_name: <account_name>  #Used in URL for Historical API.
             user_name: <user_name>
             password_encoded: <EnCoDeDpAsSWoRd>
+            #password: <PlainTextPassword>  #supported, not recommended.
             stream_label: prod
             base_output_folder: ./output #Root folder for downloaded files.
             friendly_folder_names: true  #converts title into folder name by removing whitespace
@@ -183,5 +184,5 @@
     Currently, Historical PowerTrack is only for Twitter. While this code is written in anticipation of
     expanding to other Publishers, there currently are these Job defaults:
             #publisher = "twitter" #(only Historical publisher currently)
-            #product = "track"  #(only Historical product currently)
+            #stream_type = "track"  #(only Historical product currently)
 
