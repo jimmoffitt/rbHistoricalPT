@@ -133,18 +133,36 @@
 
     There are two files passed into the 'constructor' of the PT Historical object:
 
-        oHistPT = PtHistoricalJob.new("./MyConfig.yaml", "./jobDescriptions/MyJobDescription.yaml")
+        oHistPT = PtHistoricalJob.new("./MyPowerTrackConfig.yaml", "./jobDescriptions/MyJobDescription.yaml")
 
-        Historical PowerTrack configuration file (MyConfig.yaml in this example) contains:
+        Historical PowerTrack configuration file (MyPowerTrackConfig.yaml in this example) contains:
 
-        config:
-            account_name: <account_name>  #Used in URL for Historical API.
-            user_name: <user_name>
-            password_encoded: <EnCoDeDpAsSWoRd>
-            #password: <PlainTextPassword>  #supported, not recommended.
-            stream_label: prod
+        account:
+            account_name: my_account_name  #Used in URL for Historical API.
+            user_name: me@mycompany.com
+            password_encoded: PaSsWoRd_EnCoDeD #At least some resemblance of security. Generated with Ruby "base64" gem.
+            #password: PlainTextPassword  #Use this is you want to use plain text, and comment out the encoded entry above.
+
+        #Gnip Historical API
+        historical:
+            storage: files #options: files, database --> Store activities in local files or in database?
             base_output_folder: ./output #Root folder for downloaded files.
-            friendly_folder_names: true  #converts title into folder name by removing whitespace
+            friendly_folder_names: true  #converts job title into folder name by removing whitespace
+            #Current defaults
+            publisher: twitter
+            stream_type: track
+
+        #Local environment settings: databases, web servers, etc.
+        database:
+            host: 127.0.0.1
+            port: 3306
+            #Note: currently all PowerTrack example clients share a common database schema.
+            schema: power-track_development
+            user_name: root
+            password_encoded:
+            #password: test
+            type: mysql
+
 
 
         Job description file (MyJobDescription.yaml in this example) contains:
