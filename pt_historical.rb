@@ -3,190 +3,192 @@
 
 =begin
 
-    Usage
-    =====
+# Introduction
+==============
 
-    Two files passed in at command-line if you are running this code as a script (and not building some wrapper
-    around the PtHistoricalJob class):
+This is a simple, headless, single-threaded Ruby script written to help illustrate the "work flow"
+of the Historical PowerTrack process.
 
-    1) A configuration file with account/username/password details (see below, or the sample project file, for details):
-        -c "./HistoricalPTConfig.yaml"
+This version is a 100% RESTful implementation -- which significantly simplifies the HTTP parts... As streaming
+historical data becomes available (2013 Q2), this code and the HTTP object code will be extended to support
+streaming Historical data.
 
-    2) A job description file (see below, or the sample project file, for details):
-        -j "./jobDescriptions/HistoricalRequest.yaml"
-
-    So, if you were running from a directory with this source file in it, with the configuration file in that folder too,
-    and the job description file in a "jobDescription" sub-directory, the command-line would look like this:
-
-            $ruby ./pt_historical.rb -c "./HistoricalPTConfig.yaml" -j "./jobDescriptions/HistoricalRequest.yaml"
-
-    After a job has been quoted, the this script has an additional "accept" parameter that needs to be set.
-
-        To accept a job:
-            $ruby ./pt_historical.rb -c "./HistoricalPTConfig.yaml" -j "./jobDescriptions/HistoricalRequest.yaml" -a true
-
-        To reject a job:
-            $ruby ./pt_historical.rb -c "./HistoricalPTConfig.yaml" -j "./jobDescriptions/HistoricalRequest.yaml" -a false
-
-    If the "accept" parameter is set to "true" or "false" before a job has been quoted, it will be ignored.
-
-    Note: once a job has been accepted and launched, it can not be stopped.
+To use Historical PowerTrack you will need to provide your account authentication details such as account name,
+user name, password and the 'label' assigned to your Historical PowerTrack stream.  These account details
+are specified in a configuration file formatted in YAML (http://en.wikipedia.org/wiki/YAML).  In this example code
+this file is named HistoricalPTConfig.yaml, but you can name it what you want and pass it in when creating the
+root PtHistoricalJob object.
 
 
-    Introduction
-    ============
+# Usage
+=======
 
-    This is a simple, headless, single-threaded Ruby script written to help illustrate the "work flow"
-    of the Historical PowerTrack process.
+Two files are passed in at the command-line if you are running this code as a script (and not building some wrapper
+around the PtHistoricalJob class):
 
-    This version is a 100% RESTful implementation -- which significantly simplifies the HTTP parts... As streaming
-    historical data becomes available (2013 Q2), this code and the HTTP object code will be extended to support
-    streaming Historical data.
+1) A configuration file with account/username/password details (see below, or the sample project file, for details):
+    -c "./HistoricalPTConfig.yaml"
 
-    To use Historical PowerTrack you will need to provide your account authentication details such as account name,
-    user name, password and the 'label' assigned to your Historical PowerTrack stream.  These account details
-    are specified in a configuration file formatted in YAML (http://en.wikipedia.org/wiki/YAML).  In this example code
-    this file is named HistoricalPTConfig.yaml, but you can name it what you want and pass it in when creating the
-    root PtHistoricalJob object.
+2) A job description file (see below, or the sample project file, for details):
+    -j "./jobDescriptions/HistoricalRequest.yaml"
 
+So, if you were running from a directory with this source file in it, with the configuration file in that folder too,
+and the job description file in a "jobDescription" sub-directory, the command-line would look like this:
 
-    Historical Job Work Flow
-    ========================
+        $ruby ./pt_historical.rb -c "./HistoricalPTConfig.yaml" -j "./jobDescriptions/HistoricalRequest.yaml"
 
-    This script will walk you through the process of submitting a Historical PowerTrack 'job'.
+After a job has been quoted, this script has an additional "accept" parameter that needs to be set.
 
-    Here are the states a Historical Job passes through:
-            New
-            Estimating
-            Quoted
-            Accepted/Rejected
-            Running
-            Finished
+    To accept a job:
+        $ruby ./pt_historical.rb -c "./HistoricalPTConfig.yaml" -j "./jobDescriptions/HistoricalRequest.yaml" -a true
 
-    The first step is submitting a Historical job description. These job descriptions are formatted in JSON and
-    include a title, the date range of interest, the output format, and a rules file.  This script loads these
-    details from a YAML file.  For this example code the job description file is named HistoricalRequest.yaml.
-    Again, you can name these job description files as you want and pass it in as the second argument when creating
-    a PTHistoricalJob object.
+    To reject a job:
+        $ruby ./pt_historical.rb -c "./HistoricalPTConfig.yaml" -j "./jobDescriptions/HistoricalRequest.yaml" -a false
 
-        Note: Historical Job titles must be unique.
+If the "accept" parameter is set to "true" or "false" before a job has been quoted, it will be ignored.
 
-    The PowerTrack rules can be provided in either YAML or JSON formats.  YAML may be most appropriate when creating
-    rules from scratch or converting from another source.  The JSON format is handy when you are pulling rules from
-    another PowerTrack stream.
-
-    This script encodes the Job description in JSON and posts it to your Historical PowerTrack HTTP end-point as part of
-    the job description.  If the job is successfully submitted (description is correctly specified and your account
-    credentials are valid), the job enters the estimation stage.
-
-    The estimate can take many minutes to complete.  This script will loop, checking the estimation status every
-    5 minutes until the estimate is ready.
-
-    When the estimate is ready, a quote is provided that indicates an estimate of the number of activities that will
-    be delivered, along with estimates for how long the job will take to extract and how big the data files will be.
-    This information is provided as a "quote" JSON payload when hitting the job-specific end-point.  There is an
-    example of this "quote" payload in the getStatus method header.
-
-    After a job is quoted, the work flow stops until the job is accepted or rejected.
-
-        Note: if you are test-driving Historical PowerTrack (or "trialing"), job acceptance/rejection
-        will be a manual process (by Gnip staff) and can not be automated via the Historical PowerTrack API. Once
-        you are in a subscription or on-demand contract, you'll be able to automate this approval process.
-
-        Job are accepted or rejected by passing in an "accept" boolean parameter.
-
-    If a job is accepted, the Job is launched and enters the "running" stage.  While a job is running, the actual data
-    that matching the job's rules is extracted from the archives.  This process can take many hours to complete.  This
-    script will loop, checking the job's progress (every 5-minutes currently) until the job is complete.
-
-    When the job is complete, the status becomes "finished."  When a Job is finished the script will trigger the
-    downloading and uncompressing of the job's data files.
+Note: once a job has been accepted and launched, it can not be stopped.
 
 
-    More Details
-    ============
-
-    For hopefully better and not worse, this script has a fair amount of comments.  It seems most Ruby code
-    has very little comments since Ruby is so readable...  I included a lot of comments since I assume this
-    example code will be reviewed by non-Ruby developers, and hopefully the extra narrative helps
-    teach more about the Historical PowerTrack system.
-
-    Classes offered here: PtHistoricalJob, JobDescription, PtREST, PtRules.
-    Note: This version has the PtREST and PtRules classes included here.  These classes will soon become common classes,
-    shared by multiple PowerTrack applications.
-
-    This script currently writes to standard out fairly often with various information.  You may want to comment
-    those out or redirect to a log file.  Also, be warned that this script currently has no error handling.
-
-    A "status" setting (an OpenStruct 'object' with name/message/percent) gate-keeps the user through the workflow.
-    When the script is first executed with a new job description, it will submit the job, then move on to the
-    "is quotation ready?" stage, loop there, resting 5 minutes between checks.  Once the quote is ready, the job needs
-    to be accepted or rejected.
-
-    Here are the states a Historical Job passes through:
-        #Possible states:
-            # - new
-            # - estimating --> triggers a 5-minute loop, waiting for job to be quoted.
-            # - quoted
-            # - accepted/rejected
-            # - running   --> triggers a 5-minute loop, waiting for job to finish.
-            # - finished  --> triggers code to download and uncompress files.
 
 
-    There are two files passed into the 'constructor' of the PT Historical object:
+Historical Job Work Flow
+========================
 
-        oHistPT = PtHistoricalJob.new("./MyConfig.yaml", "./jobDescriptions/MyJobDescription.yaml")
+This script will walk you through the process of submitting a Historical PowerTrack 'job'.
 
-        Historical PowerTrack configuration file (MyConfig.yaml in this example) contains:
+Here are the states a Historical Job passes through:
+        New
+        Estimating
+        Quoted
+        Accept/Reject
+        Running
+        Finished
 
-        config:
-            account_name: <account_name>  #Used in URL for Historical API.
-            user_name: <user_name>
-            password_encoded: <EnCoDeDpAsSWoRd>
-            stream_label: prod
-            base_output_folder: ./output #Root folder for downloaded files.
-            friendly_folder_names: true  #converts title into folder name by removing whitespace
+The first step is submitting a Historical job description. These job descriptions are formatted in JSON and
+include a title, the date range of interest, the output format, and a rules file.  This script loads these
+details from a YAML file.  For this example code the job description file is named HistoricalRequest.yaml.
+Again, you can name these job description files as you want and pass it in as the second argument when creating
+a PTHistoricalJob object.
+
+    Note: Historical Job titles must be unique.
+
+The PowerTrack rules can be provided in either YAML or JSON formats.  YAML may be most appropriate when creating
+rules from scratch or converting from another source.  The JSON format is handy when you are pulling rules from
+another PowerTrack stream.
+
+This script encodes the Job description in JSON and posts it to your Historical PowerTrack HTTP end-point as part of
+the job description.  If the job is successfully submitted (description is correctly specified and your account
+credentials are valid), the job enters the estimation stage.
+
+The estimate can take many minutes to complete.  This script will loop, checking the estimation status every
+5 minutes until the estimate is ready.
+
+When the estimate is ready, a quote is provided that indicates an estimate of the number of activities that will
+be delivered, along with estimates for how long the job will take to extract and how big the data files will be.
+This information is provided as a "quote" JSON payload when hitting the job-specific end-point.  There is an
+example of this "quote" payload in the getStatus method header.
+
+After a job is quoted, the work flow stops until the job is accepted or rejected.
+
+    Note: if you are test-driving Historical PowerTrack (or "trialing"), job acceptance/rejection
+    will be a manual process (by Gnip staff) and can not be automated via the Historical PowerTrack API. Once
+    you are in a subscription or on-demand contract, you'll be able to automate this approval process.
+
+    Job are accepted or rejected by passing in an "accept" boolean parameter.
+
+If a job is accepted, the Job is launched and enters the "running" stage.  While a job is running, the actual data
+that matching the job's rules is extracted from the archives.  This process can take many hours to complete.  This
+script will loop, checking the job's progress (every 5-minutes currently) until the job is complete.
+
+When the job is complete, the status becomes "finished."  When a Job is finished the script will trigger the
+downloading and uncompressing of the job's data files.
 
 
-        Job description file (MyJobDescription.yaml in this example) contains:
+More Details
+============
 
-        job:
-            #These will change from request to request.
-            title: Test_4
-            from_date: 201302010000
-            #to_date: 201106010500
-            to_date: 201302020000
-            #These are 'static' values (more or less).
-            service_name: gnip
-            #These are optional, since they are defaults in code.
-            publisher: twitter
-            stream_type: track
-            data_format: activity-streams
+For hopefully better and not worse, this script has a fair amount of comments.  It seems most Ruby code
+has very little comments since Ruby is so readable...  I included a lot of comments since I assume this
+example code will be reviewed by non-Ruby developers, and hopefully the extra narrative helps
+teach more about the Historical PowerTrack system.
 
-        #File with YAML-formatted rules.
-        rules_file: ./rules/test.rules
+Classes offered here: PtHistoricalJob, JobDescription, PtREST, PtRules.
+Note: This version has the PtREST and PtRules classes included here.  These classes will soon become common classes,
+shared by multiple PowerTrack applications.
 
-    The Job Description file (MyJobDescription.yaml in this example) in turn references a YAML file containing the
-    PowerTrack rules for the data retrieval.
+This script currently writes to standard out fairly often with various information.  You may want to comment
+those out or redirect to a log file.  Also, be warned that this script currently has no error handling.
 
-        rules:
-            - value  : (bounding_box:[-86.2 38.0 -85.743 38.35] OR bounding_box:[-85.743 38.0 -85.286 38.35] OR bounding_box:[-86.2 38.35 -85.743 38.7] OR bounding_box:[-85.743 38.35 -85.286 38.7])
-            tag   : geo-louisville
-            - value  : (rain OR flood OR storm OR weather)
-            tag   : weather
-            - value  : (rain OR precipitation OR flood) (inches OR in OR inch OR \")
-            tag   : measurement
-            - value  : ThisRuleWillNotMatchAndHasNoTag
+A "status" setting (an OpenStruct 'object' with name/message/percent) gate-keeps the user through the workflow.
+When the script is first executed with a new job description, it will submit the job, then move on to the
+"is quotation ready?" stage, loop there, resting 5 minutes between checks.  Once the quote is ready, the job needs
+to be accepted or rejected.
+
+Here are the states a Historical Job passes through:
+    #Possible states:
+        # - new
+        # - estimating --> triggers a 5-minute loop, waiting for job to be quoted.
+        # - quoted
+        # - accepted/rejected
+        # - running   --> triggers a 5-minute loop, waiting for job to finish.
+        # - finished  --> triggers code to download and uncompress files.
 
 
-    The Historical "PtHistoricalJob" object manages one Job in a single-threaded manner.  Code managing this class could
-    spin up multiple objects.
+There are two files passed into the 'constructor' of the PT Historical object:
 
-    Currently, Historical PowerTrack is only for Twitter. While this code is written in anticipation of
-    expanding to other Publishers, there currently are these Job defaults:
-            #publisher = "twitter" #(only Historical publisher currently)
-            #product = "track"  #(only Historical product currently)
+    oHistPT = PtHistoricalJob.new("./MyPowerTrackConfig.yaml", "./jobDescriptions/MyJobDescription.yaml")
 
+    Historical PowerTrack configuration file (MyPowerTrackConfig.yaml in this example) contains:
+
+    config:
+        account_name: <account_name>  #Used in URL for Historical API.
+        user_name: <user_name>
+        password_encoded: <EnCoDeDpAsSWoRd>
+        #password: <PlainTextPassword>  #supported, not recommended.
+        stream_label: prod
+        base_output_folder: ./output #Root folder for downloaded files.
+        friendly_folder_names: true  #converts title into folder name by removing whitespace
+
+
+    Job description file (MyJobDescription.yaml in this example) contains:
+
+    job:
+        #These will change from request to request.
+        title: Test_4
+        from_date: 201302010000
+        #to_date: 201106010500
+        to_date: 201302020000
+        #These are 'static' values (more or less).
+        service_name: gnip
+        #These are optional, since they are defaults in code.
+        publisher: twitter
+        stream_type: track
+        data_format: activity-streams
+
+    #File with YAML-formatted rules.
+    rules_file: ./rules/test.rules
+
+The Job Description file (MyJobDescription.yaml in this example) in turn references a YAML file containing the
+PowerTrack rules for the data retrieval.
+
+    rules:
+        - value  : (bounding_box:[-86.2 38.0 -85.743 38.35] OR bounding_box:[-85.743 38.0 -85.286 38.35] OR bounding_box:[-86.2 38.35 -85.743 38.7] OR bounding_box:[-85.743 38.35 -85.286 38.7])
+        tag   : geo-louisville
+        - value  : (rain OR flood OR storm OR weather)
+        tag   : weather
+        - value  : (rain OR precipitation OR flood) (inches OR in OR inch OR \")
+        tag   : measurement
+        - value  : ThisRuleWillNotMatchAndHasNoTag
+
+
+The Historical "PtHistoricalJob" object manages one Job in a single-threaded manner.  Code managing this class could
+spin up multiple objects.
+
+Currently, Historical PowerTrack is only for Twitter. While this code is written in anticipation of
+expanding to other Publishers, there currently are these Job defaults:
+        #publisher = "twitter" #(only Historical publisher currently)
+        #stream_type = "track"  #(only Historical product currently)
 =end
 
 
@@ -206,273 +208,20 @@ require "yaml"          #Used for configuration, job and rules files.
 require "base64"        #Basic encoding of passwords.
 require "ostruct"       #Lightweight object.attribute helper.  Used for status structure.
 require "optparse"
-
-
-class PtRules
-    attr_accessor :rules
-
-    def initialize
-        @rules = Array.new
-    end
-
-    #Methods for maintaining the rules array ===========================================================================
-    def addRule(value, tag=nil)
-        #Gotta have a rule value, but tag is optional.
-        rule = Hash.new
-        rule[:value] = value
-        if not tag.nil? then
-            rule[:tag] = tag
-        end
-        #Add rule to rules array.
-        @rules << rule
-    end
-
-    def deleteRule(value)   #No tag passed in, we remove with 'value' match.
-                            #Regardless of tag, tour rules Array and remove.
-        @rules.each do |r|
-            if r[:value] == value then
-                @rules.delete(r)
-            end
-        end
-    end
-
-    #Methods for getting the rules in the structure you want ==================================================
-    def getJSON
-        rulesPayload = Hash.new
-        rulesPayload[:rules] = @rules
-        rulesPayload.to_json
-    end
-    def getArray
-        @rules
-    end
-
-    def getHash
-        @rules
-    end
-
-    #Methods for loading rules from files ==============================================================================
-
-    def loadRulesYAML(file)
-        #Open file and parse, looking for rule/tag pairs
-        ruleset = YAML.load_file(file)
-        rules = ruleset["rules"]
-        rules.each do |rule|
-            #p rule
-            @rules << rule
-        end
-    end
-
-    def loadRulesJSON(file)
-        #Open file and parse
-        contents = File.read(file)
-        ruleset = JSON.parse(contents)
-        rules = ruleset["rules"]
-        rules.each do |rule|
-            @rules << rule
-        end
-    end
-end
-
-class PtREST
-
-    attr_accessor :url, :user_name, :password_encoded, :headers, :data, :data_agent
-
-    def initialize(url=nil, user_name=nil, password_encoded=nil, headers=nil)
-        if not url.nil?
-            @url = url
-        end
-
-        if not user_name.nil?
-            @user_name = user_name
-        end
-
-        if not password_encoded.nil?
-            @password_encoded = password_encoded
-            @password = Base64.decode64(@password_encoded)
-        end
-
-        if not headers.nil?
-            @headers = headers
-        end
-    end
-
-    def url=(value)
-        @url = value
-        @uri = URI.parse(@url)
-    end
-
-    def password_encoded=(value)
-        @password_encoded=value
-        @password = Base64.decode64(@password_encoded)
-    end
-
-    #Helper functions for building URLs ================================================================================
-
-    def getHistoricalURL(account_name=nil)
-        @url = "https://historical.gnip.com:443/accounts/" #Root url for Historical PowerTrack API.
-
-        if account_name.nil? then #using object account_name attribute.
-            if @account_name.nil?
-                p "No account name set.  Can not set url."
-            else
-                @url = @url + @account_name + "/jobs.json"
-            end
-        else #account_name passed in, so use that...
-            @url = @url + account_name + "/jobs.json"
-        end
-    end
-
-    def getRehydrationURL(account_name=nil)
-        @url = "https://rehydration.gnip.com:443/accounts/"  #Root url for Rehydration PowerTrack.
-
-        if account_name.nil? then #using object account_name attribute.
-            if @account_name.nil?
-                p "No account name set.  Can not set url."
-            else
-                @url = @url + @account_name + "/publishers/twitter/rehydration/activities.json?ids="
-            end
-        else #account_name passed in, so use that...
-            @url = @url + account_name + "/publishers/twitter/rehydration/activities.json?ids="
-        end
-    end
-
-    #Fundamental REST API methods ======================================================================================
-    def POST(data=nil)
-
-        if not data.nil? #if request data passed in, use it.
-            @data = data
-        end
-
-        uri = URI(@url)
-        http = Net::HTTP.new(uri.host, uri.port)
-        http.use_ssl = true
-        request = Net::HTTP::Post.new(uri.path)
-        request.body = @data
-        request.basic_auth(@user_name, @password)
-        response = http.request(request)
-        return response
-    end
-
-    def PUT(data=nil)
-
-        if not data.nil? #if request data passed in, use it.
-            @data = data
-        end
-
-        uri = URI(@url)
-        http = Net::HTTP.new(uri.host, uri.port)
-        http.use_ssl = true
-        request = Net::HTTP::Put.new(uri.path)
-        request.body = @data
-        request.basic_auth(@user_name, @password)
-        response = http.request(request)
-        return response
-    end
-
-    def GET
-        uri = URI(@url)
-        http = Net::HTTP.new(uri.host, uri.port)
-        http.use_ssl = true
-        request = Net::HTTP::Get.new(uri.path)
-        request.basic_auth(@user_name, @password)
-        response = http.request(request)
-        return response
-    end
-
-    def DELETE(data=nil)
-        if not data.nil?
-            @data = data
-        end
-
-        uri = URI(@url)
-        http = Net::HTTP.new(uri.host, uri.port)
-        http.use_ssl = true
-        request = Net::HTTP::Delete.new(uri.path)
-        request.body = @data
-        request.basic_auth(@user_name, @password)
-        response = http.request(request)
-        return response
-    end
-end
-
-#=======================================================================================================================
-#Historical PowerTrack Job Description.
-#Simple helper class for reading in and handling job descriptions.
-#Has methods for loading in a YAML job description file and returning as JSON.
-
-class JobDescription
-
-    attr_accessor :title, :to_date, :from_date, :rules_file, :rules, :service_name,
-                  :publisher, :stream_type, :data_format
-
-    def initialize
-        #Defaults.
-        @publisher = "twitter"
-        @stream_type = "track"
-        @data_format = "activity-streams"
-    end
-
-    def getConfig(config_file)
-
-        config = YAML.load_file(config_file)
-
-        #Job details.
-        @title = config["job"]["title"]
-        @to_date = config["job"]["to_date"]
-        @from_date = config["job"]["from_date"]
-        @service_name  = config["job"]["service_name"]
-        @publisher  = config["job"]["publisher"]
-        @stream_type = config["job"]["stream_type"]
-        @data_format = config["job"]["data_format"]
-
-        #Rules file in a YAML sequence format or it's a JSON file.
-        @rules_file = config["rules_file"]
-    end
-
-    def getJobDescription
-
-        #Create Rules object .
-        oRules = PtRules.new
-        #Create rules for this Job. Load rules from "rules_file" and add to job description.
-
-        #if it is a .rules file then it is YAML...
-        if @rules_file.split(".").last == "rules" then
-            oRules.loadRulesYAML(@rules_file)
-        else
-            oRules.loadRulesJSON(@rules_file)
-        end
-
-        #Syntax for adding one rule at a time.
-        #oRules.addRule("bounding_box[ ]", "geo")
-
-        #Add Rules to Job description.
-        @rules = oRules.getHash
-        #p oJob.getJSON
-        getJSON
-    end
-
-
-    #Returns job description in JSON.
-    def getJSON
-        job = {:title => @title, :publisher => @publisher, :toDate => @to_date.to_s, :fromDate => @from_date.to_s, :streamType => @stream_type,
-               :dataFormat => @data_format, :serviceUsername => @service_name, :rules => @rules }
-        job.to_json
-    end
-
-end #Job class.
-
-
+require "zlib"
 #=======================================================================================================================
 #Object for marshalling a Historical job through the process.
 #One object per job.  Creates one HTTP and one Job object...
 
 class PtHistoricalJob
 
-    attr_accessor :http, :job, :uuid, :base_url, :url, :job_url, :account_name, :user_name, :password_encoded,
+    attr_accessor :http,
+                  :datastore,
+                  :job, :uuid, :base_url, :url, :job_url, :account_name, :user_name, :password_encoded,
                   :stream_type, :base_output_folder, :output_folder, :friendly_folder_names,
                   :quote, :results, :accept
 
-    def initialize(account_details_file, job_description_file, accept=nil)
+    def initialize(config_file, job_description_file, accept=nil)
         #class variables.
         @@base_url = "https://historical.gnip.com/accounts/"
         @@output_folder = "./output"
@@ -487,7 +236,7 @@ class PtHistoricalJob
             end
         end
 
-        getSystemConfig(account_details_file)  #Load the oHistorical PowerTrack account details.
+        getSystemConfig(config_file)  #Load the oHistorical PowerTrack account details.
 
         @url = constructURL  #Spin up Historical URL.
 
@@ -513,18 +262,32 @@ class PtHistoricalJob
         config = YAML.load_file(config_file)
 
         #Config details.
-        @account_name = config["config"]["account_name"]
-        @user_name  = config["config"]["user_name"]
-        @password_encoded = config["config"]["password_encoded"]
+        @account_name = config["account"]["account_name"]
+        @user_name  = config["account"]["user_name"]
+        @password_encoded = config["account"]["password_encoded"]
 
         if @password_encoded.nil? then  #User is passing in plain-text password...
-            @password = config["config"]["password"]
+            @password = config["account"]["password"]
             @password_encoded = Base64.encode64(@password)
         end
 
-        @stream_type = config["config"]["stream_type"]
-        @base_output_folder = config["config"]["base_output_folder"]
-        @friendly_folder_names = config["config"]["friendly_folder_names"]
+        @stream_type = config["historical"]["stream_type"]
+        @base_output_folder = config["historical"]["base_output_folder"]
+        @friendly_folder_names = config["historical"]["friendly_folder_names"]
+
+        @storage = config["historical"]["storage"]
+
+        if @storage == "database" then #Get database connection details.
+            db_host = config["database"]["host"]
+            db_port = config["database"]["port"]
+            db_schema = config["database"]["schema"]
+            db_user_name = config["database"]["user_name"]
+            db_password  = config["database"]["password"]
+
+            @datastore = PtDatabase.new(db_host, db_port, db_schema, db_user_name, db_password)
+            @datastore.connect
+        end
+
     end
 
     '''
@@ -877,14 +640,41 @@ class PtHistoricalJob
                         sleep sleep_seconds
                     end
 
-                    #Take URL and parse to create receiving file name.
-                    name = url[url.index(@uuid)..(url.index(".gz?")+2)].gsub!("/","_")
+                    if @storage == "files" then #Write the file.
 
-                    File.open(@output_folder + "/" + name, "wb") do |saved_file|
-                        # the following "open" is provided by open-uri
-                        open(url, 'rb') do |read_file|
-                            saved_file.write(read_file.read)
-                            #print "MT: Saved " + name + " | "
+                        #Take URL and parse to create receiving file name.
+                        name = url[url.index(@uuid)..(url.index(".gz?")+2)].gsub!("/","_")
+
+                        File.open(@output_folder + "/" + name, "wb") do |new_file|
+                            # the following "open" is provided by open-uri
+                            open(url, 'rb') do |read_file|
+                                new_file.write(read_file.read)
+                            end
+                        end
+                    else #Storing in database.
+                        p url
+
+                        #Load url reference into a file object
+                        File.open("temp", "wb") do |new_file|
+                            # the following "open" is provided by open-uri
+                            open(url, 'rb') do |read_file|
+                                new_file.write(read_file.read)
+                            end
+                        end
+
+                        #Uncompress file object into a string
+                        activities = Zlib::GzipReader.open("temp") { |f| f.read }
+
+                        activities.lines().each do |line|
+                            if line == "\r\n" then
+                                #p "empty line"
+                            elsif line.include?("activity_count") then
+                                #p line
+                            else
+                                #...and store activity lines in the database.
+                                line.rstrip!
+                                @datastore.storeActivity(line)
+                            end
                         end
                     end
                 end
@@ -954,13 +744,25 @@ class PtHistoricalJob
     A simple wrapper to the gunzip command.  Provides a simplistic mechanism for uncompressing gz files on Linux or
     Mac OS.  For Windows developers, this should be replaced with more appropriate code.
     '''
-    #TODO: Convert to a Ruby gem?
-    #TODO: May want to load files into an array and slice through it to avoid "too many arguments" errors...
     def uncompressData
 
+        Dir.glob(@output_folder + "/*.gz") do |file_name|
+
+            #This code throws no errors, but does nothing.
+            Zlib::GzipReader.open(file_name) { |gz|
+                new_name = File.dirname(file_name) + "/" + File.basename(file_name, ".*")
+                g = File.new(new_name, "w")
+                g.write(gz.read)
+                g.close
+            }
+
+            File.delete(file_name)
+        end
+
+        # Alternate code that using system(command) and Linux/Mac commands.
         #Code to unzip
-        command = "gunzip " + @output_folder + "/*.gz"
-        system(command)
+        #command = "gunzip " + @output_folder + "/*.gz"
+        #system(command)
 
         #Code to delete *.gz
         #command = "rm " + @output_folder + "/*.gz"
@@ -1119,10 +921,9 @@ class PtHistoricalJob
 
             downloadData(jobInfo)
             handleSuspectMinutes(jobInfo)
-            uncompressData
-
-            #Code to load into database
-            #oDB = PtDB.new
+            if @storage == "files" then
+                uncompressData
+            end
 
         end
     end
@@ -1131,6 +932,498 @@ class PtHistoricalJob
 end #PtHistorical class.
 
 
+
+#=======================================================================================================================
+#Historical PowerTrack Job Description.
+#Simple helper class for reading in and handling job descriptions.
+#Has methods for loading in a YAML job description file and returning as JSON.
+
+class JobDescription
+
+    attr_accessor :title, :to_date, :from_date, :rules_file, :rules, :service_name,
+                  :publisher, :stream_type, :data_format
+
+    def initialize
+        #Defaults.
+        @publisher = "twitter"
+        @stream_type = "track"
+        @data_format = "activity-streams"
+    end
+
+    def getConfig(config_file)
+
+        config = YAML.load_file(config_file)
+
+        #Job details.
+        @title = config["job"]["title"]
+        @to_date = config["job"]["to_date"]
+        @from_date = config["job"]["from_date"]
+        @service_name  = config["job"]["service_name"]
+        @publisher  = config["job"]["publisher"]
+        @stream_type = config["job"]["stream_type"]
+        @data_format = config["job"]["data_format"]
+
+        #Rules file in a YAML sequence format or it's a JSON file.
+        @rules_file = config["rules_file"]
+    end
+
+    def getJobDescription
+
+        #Create Rules object .
+        oRules = PtRules.new
+        #Create rules for this Job. Load rules from "rules_file" and add to job description.
+
+        #if it is a .rules file then it is YAML...
+        if @rules_file.split(".").last == "rules" then
+            oRules.loadRulesYAML(@rules_file)
+        else
+            oRules.loadRulesJSON(@rules_file)
+        end
+
+        #Syntax for adding one rule at a time.
+        #oRules.addRule("bounding_box[ ]", "geo")
+
+        #Add Rules to Job description.
+        @rules = oRules.getHash
+        #p oJob.getJSON
+        getJSON
+    end
+
+
+    #Returns job description in JSON.
+    def getJSON
+        job = {:title => @title, :publisher => @publisher, :toDate => @to_date.to_s, :fromDate => @from_date.to_s, :streamType => @stream_type,
+               :dataFormat => @data_format, :serviceUsername => @service_name, :rules => @rules }
+        job.to_json
+    end
+
+end #Job Description class.
+
+
+
+#=======================================================================================================================
+class PtRules
+    attr_accessor :rules
+
+    def initialize
+        @rules = Array.new
+    end
+
+    #Methods for maintaining the rules array
+    def addRule(value, tag=nil)
+        #Gotta have a rule value, but tag is optional.
+        rule = Hash.new
+        rule[:value] = value
+        if not tag.nil? then
+            rule[:tag] = tag
+        end
+        #Add rule to rules array.
+        @rules << rule
+    end
+
+    def deleteRule(value)   #No tag passed in, we remove with 'value' match.
+                            #Regardless of tag, tour rules Array and remove.
+        @rules.each do |r|
+            if r[:value] == value then
+                @rules.delete(r)
+            end
+        end
+    end
+
+    #Methods for getting the rules in the structure you want ==================================================
+    def getJSON
+        rulesPayload = Hash.new
+        rulesPayload[:rules] = @rules
+        rulesPayload.to_json
+    end
+    def getArray
+        @rules
+    end
+
+    def getHash
+        @rules
+    end
+
+    #Methods for loading rules from files ==============================================================================
+
+    def loadRulesYAML(file)
+        #Open file and parse, looking for rule/tag pairs
+        ruleset = YAML.load_file(file)
+        rules = ruleset["rules"]
+        rules.each do |rule|
+            #p rule
+            @rules << rule
+        end
+    end
+
+    def loadRulesJSON(file)
+        #Open file and parse
+        contents = File.read(file)
+        ruleset = JSON.parse(contents)
+        rules = ruleset["rules"]
+        rules.each do |rule|
+            @rules << rule
+        end
+    end
+end
+
+
+#=======================================================================================================================
+class PtDatabase
+    require "mysql2"
+    require "time"
+    require "json"
+    require "base64"
+
+    attr_accessor :client, :host, :port, :user_name, :password, :database, :sql
+
+    def initialize(host=nil, port=nil, database=nil, user_name=nil, password=nil)
+        #local database for storing activity data...
+
+        if host.nil? then
+            @host = "127.0.0.1" #Local host is default.
+        else
+            @host = host
+        end
+
+        if port.nil? then
+            @port = 3306 #MySQL post is default.
+        else
+            @port = port
+        end
+
+        if not user_name.nil?  #No default for this setting.
+            @user_name = user_name
+        end
+
+        if not password.nil? #No default for this setting.
+            @password = password
+        end
+
+        if not database.nil? #No default for this setting.
+            @database = database
+        end
+    end
+
+    #You can pass in a PowerTrack configuration file and load details from that.
+    def config=(config_file)
+        @config = config_file
+        getSystemConfig(@config)
+    end
+
+
+    #Load in the configuration file details, setting many object attributes.
+    def getSystemConfig(config)
+
+        config = YAML.load_file(config_file)
+
+        #Config details.
+        @host = config["database"]["host"]
+        @port = config["database"]["port"]
+
+        @user_name = config["database"]["user_name"]
+        @password_encoded = config["database"]["password_encoded"]
+
+        if @password_encoded.nil? then  #User is passing in plain-text password...
+            @password = config["database"]["password"]
+            @password_encoded = Base64.encode64(@password)
+        end
+
+        @database = config["database"]["schema"]
+    end
+
+
+    def to_s
+        "PowerTrack object => " + @host + ":" + @port.to_s + "@" + @user_name + " schema:" + @database
+    end
+
+    def connect
+        #TODO: need support for password!
+        @client = Mysql2::Client.new(:host => @host, :port => @port, :username => @user_name, :database => @database )
+    end
+
+    def disconnect
+        @client.close
+    end
+
+    def SELECT(sql = nil)
+
+        if sql.nil? then
+            sql = @sql
+        end
+
+        result = @client.query(sql)
+
+        result
+
+    end
+
+    def UPDATE(sql)
+    end
+
+    def REPLACE(sql)
+        begin
+            result = @client.query(sql)
+            true
+        rescue
+            false
+        end
+    end
+
+    #NativeID is defined as an integer.  This works for Twitter, but not for other publishers who use alphanumerics.
+    #Tweet "id" field has this form: "tag:search.twitter.com,2005:198308769506136064"
+    #This function parses out the numeric ID at end.
+    def getNativeID(id)
+        native_id = Integer(id.split(":")[-1])
+    end
+
+    #Twitter uses UTC.
+    def getPostedTime(time_stamp)
+        time_stamp = Time.parse(time_stamp).strftime("%Y-%m-%d %H:%M:%S")
+    end
+
+    #With Rehydration, there are no rules, just requested IDs.
+    def getMatchingRules(matching_rules)
+        return "rehydration", "rehydration"
+    end
+
+    '''
+    Parse the activity payload and get the lat/long coordinates.
+    ORDER MATTERS: Latitude, Longitude.
+
+    #An example here we have POINT coordinates.
+    "location":{
+        "objectType":"place",
+        "displayName":"Jefferson Southwest, KY",
+        "name":"Jefferson Southwest",
+        "country_code":"United States",
+        "twitter_country_code":"US",
+        "link":"http://api.twitter.com/1/geo/id/7a46e5213d3a1af2.json",
+        "geo":{
+            "type":"Polygon",
+            "coordinates":[[[-85.951854,37.997244],[-85.700857,37.997244],[-85.700857,38.233633],[-85.951854,38.233633]]]}
+    },
+    "geo":{"type":"Point","coordinates":[38.1341,-85.8953]},
+    '''
+
+    def getGeoCoordinates(activity)
+
+        geo = activity["geo"]
+        latitude = 0
+        longitude = 0
+
+        if not geo.nil? then #We have a "root" geo entry, so go there to get Point location.
+            if geo["type"] == "Point" then
+                latitude = geo["coordinates"][0]
+                longitude = geo["coordinates"][1]
+
+                #We are done here, so return
+                return latitude, longitude
+
+            end
+        end
+
+        #p activity["location"]
+        #p activity["location"]["geo"]
+        #p activity["geo"]
+
+        return latitude, longitude
+    end
+
+    #Replace some special characters with an _.
+    #(Or, for Ruby, use ActiveRecord for all db interaction!)
+    def handleSpecialCharacters(text)
+
+        if text.include?("'") then
+            text.gsub!("'","_")
+        end
+        if text.include?("\\") then
+            text.gsub!("\\","_")
+        end
+
+        text
+    end
+
+
+    '''
+    storeActivity
+    Receives an Activity Stream data point formatted in JSON.
+    Does some (hopefully) quick parsing of payload.
+    Writes to an Activities table.
+
+    t.integer  "native_id",   :limit => 8
+    t.text     "content"
+    t.text     "body"
+    t.string   "rule_value"
+    t.string   "rule_tag"
+    t.string   "publisher"
+    t.string   "job_uuid"  #Used for Historical PowerTrack.
+    t.float    "latitude"
+    t.float    "longitude"
+    t.datetime "posted_time"
+    '''
+
+    def storeActivity(activity, uuid = nil)
+
+        data = JSON.parse(activity)
+
+        #Handle uuid if there is not one (tweet not returned by Historical API)
+        if uuid == nil then
+            uuid = ""
+        end
+
+        #Parse from the activity the "atomic" elements we are inserting into db fields.
+
+        post_time = getPostedTime(data["postedTime"])
+
+        native_id = getNativeID(data["id"])
+
+        body = handleSpecialCharacters(data["body"])
+
+        content = handleSpecialCharacters(activity)
+
+        #Parse gnip:matching_rules and extract one or more rule values/tags
+        rule_values, rule_tags  = "rehydration", "rehydration" #getMatchingRules(data["gnip"]["matching_rules"])
+
+        #Parse the activity and extract any geo available data.
+        latitude, longitude = getGeoCoordinates(data)
+
+        #Build SQL.
+        sql = "REPLACE INTO activities (native_id, posted_time, content, body, rule_value, rule_tag, publisher, job_uuid, latitude, longitude, created_at, updated_at ) " +
+            "VALUES (#{native_id}, '#{post_time}', '#{content}', '#{body}', '#{rule_values}','#{rule_tags}','Twitter', '#{uuid}', #{latitude}, #{longitude}, UTC_TIMESTAMP(), UTC_TIMESTAMP());"
+
+        if not REPLACE(sql) then
+            p "Activity not written to database: " + activity.to_s
+        end
+    end
+end #PtDB class.
+
+
+
+#=======================================================================================================================
+class PtREST
+
+    attr_accessor :url, :user_name, :password_encoded, :headers, :data, :data_agent
+
+    def initialize(url=nil, user_name=nil, password_encoded=nil, headers=nil)
+        if not url.nil?
+            @url = url
+        end
+
+        if not user_name.nil?
+            @user_name = user_name
+        end
+
+        if not password_encoded.nil?
+            @password_encoded = password_encoded
+            @password = Base64.decode64(@password_encoded)
+        end
+
+        if not headers.nil?
+            @headers = headers
+        end
+    end
+
+    def url=(value)
+        @url = value
+        @uri = URI.parse(@url)
+    end
+
+    def password_encoded=(value)
+        @password_encoded=value
+        @password = Base64.decode64(@password_encoded)
+    end
+
+    #Helper functions for building URLs
+
+    def getHistoricalURL(account_name=nil)
+        @url = "https://historical.gnip.com:443/accounts/" #Root url for Historical PowerTrack API.
+
+        if account_name.nil? then #using object account_name attribute.
+            if @account_name.nil?
+                p "No account name set.  Can not set url."
+            else
+                @url = @url + @account_name + "/jobs.json"
+            end
+        else #account_name passed in, so use that...
+            @url = @url + account_name + "/jobs.json"
+        end
+    end
+
+    def getRehydrationURL(account_name=nil)
+        @url = "https://rehydration.gnip.com:443/accounts/"  #Root url for Rehydration PowerTrack.
+
+        if account_name.nil? then #using object account_name attribute.
+            if @account_name.nil?
+                p "No account name set.  Can not set url."
+            else
+                @url = @url + @account_name + "/publishers/twitter/rehydration/activities.json?ids="
+            end
+        else #account_name passed in, so use that...
+            @url = @url + account_name + "/publishers/twitter/rehydration/activities.json?ids="
+        end
+    end
+
+    #Fundamental REST API methods
+    def POST(data=nil)
+
+        if not data.nil? #if request data passed in, use it.
+            @data = data
+        end
+
+        uri = URI(@url)
+        http = Net::HTTP.new(uri.host, uri.port)
+        http.use_ssl = true
+        request = Net::HTTP::Post.new(uri.path)
+        request.body = @data
+        request.basic_auth(@user_name, @password)
+        response = http.request(request)
+        return response
+    end
+
+    def PUT(data=nil)
+
+        if not data.nil? #if request data passed in, use it.
+            @data = data
+        end
+
+        uri = URI(@url)
+        http = Net::HTTP.new(uri.host, uri.port)
+        http.use_ssl = true
+        request = Net::HTTP::Put.new(uri.path)
+        request.body = @data
+        request.basic_auth(@user_name, @password)
+        response = http.request(request)
+        return response
+    end
+
+    def GET
+        uri = URI(@url)
+        http = Net::HTTP.new(uri.host, uri.port)
+        http.use_ssl = true
+        request = Net::HTTP::Get.new(uri.path)
+        request.basic_auth(@user_name, @password)
+        response = http.request(request)
+        return response
+    end
+
+    def DELETE(data=nil)
+        if not data.nil?
+            @data = data
+        end
+
+        uri = URI(@url)
+        http = Net::HTTP.new(uri.host, uri.port)
+        http.use_ssl = true
+        request = Net::HTTP::Delete.new(uri.path)
+        request.body = @data
+        request.basic_auth(@user_name, @password)
+        response = http.request(request)
+        return response
+    end
+end
+
+#=======================================================================================================================
 #-----------------------------------------
 #Usage examples and unit testing:
 #-----------------------------------------
@@ -1145,11 +1438,11 @@ if __FILE__ == $0  #This script code is executed when running this file.
     end
 
     if $config.nil? then
-        $config = "./HistoricalPTConfig.yaml"  #Default
+        $config = "./PowerTrackConfig_private.yaml"  #Default
     end
 
     if $job.nil? then
-        $job = "./jobDescriptions/HistoricalRequest.yaml" #Default
+        $job = "./jobDescriptions/wxReport.yaml" #Default
     end
 
     #Create a Historical PowerTrack object, passing in an account configuration file and a job description file.
