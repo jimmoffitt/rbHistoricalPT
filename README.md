@@ -22,7 +22,7 @@ Two files are passed in at the command-line if you are running this code as a sc
 around the PtHistoricalJob class):
 
 1) A configuration file with account/username/password details (see below, or the sample project file, for details):
-    -c "./HistoricalPTConfig.yaml"
+    -c "./MyPowerTrackConfig.yaml"
 
 2) A job description file (see below, or the sample project file, for details):
     -j "./jobDescriptions/HistoricalRequest.yaml"
@@ -30,15 +30,15 @@ around the PtHistoricalJob class):
 So, if you were running from a directory with this source file in it, with the configuration file in that folder too,
 and the job description file in a "jobDescription" sub-directory, the command-line would look like this:
 
-        $ruby ./pt_historical.rb -c "./HistoricalPTConfig.yaml" -j "./jobDescriptions/HistoricalRequest.yaml"
+        $ruby ./pt_historical.rb -c "./MyPowerTrackConfig.yaml" -j "./jobDescriptions/HistoricalRequest.yaml"
 
 After a job has been quoted, this script has an additional "accept" parameter that needs to be set.
 
     To accept a job:
-        $ruby ./pt_historical.rb -c "./HistoricalPTConfig.yaml" -j "./jobDescriptions/HistoricalRequest.yaml" -a true
+        $ruby ./pt_historical.rb -c "./MyPowerTrackConfig.yaml" -j "./jobDescriptions/HistoricalRequest.yaml" -a true
 
     To reject a job:
-        $ruby ./pt_historical.rb -c "./HistoricalPTConfig.yaml" -j "./jobDescriptions/HistoricalRequest.yaml" -a false
+        $ruby ./pt_historical.rb -c "./MyPowerTrackConfig.yaml" -j "./jobDescriptions/HistoricalRequest.yaml" -a false
 
 If the "accept" parameter is set to "true" or "false" before a job has been quoted, it will be ignored.
 
@@ -53,12 +53,12 @@ Historical Job Work Flow
 This script will walk you through the process of submitting a Historical PowerTrack 'job'.
 
 Here are the states a Historical Job passes through:
-        New
-        Estimating
-        Quoted
-        Accept/Reject
-        Running
-        Finished
+        * New
+        * Estimating
+        * Quoted
+        * Accept/Reject
+        * Running
+        * Finished
 
 The first step is submitting a Historical job description. These job descriptions are formatted in JSON and
 include a title, the date range of interest, the output format, and a rules file.  This script loads these
