@@ -53,12 +53,12 @@ Historical Job Work Flow
 This script will walk you through the process of submitting a Historical PowerTrack 'job'.
 
 Here are the states a Historical Job passes through:
-        * New
-        * Estimating
-        * Quoted
-        * Accept/Reject
-        * Running
-        * Finished
++ New
++ Estimating
++ Quoted
++ Accept/Reject
++ Running
++ Finished
 
 The first step is submitting a Historical job description. These job descriptions are formatted in JSON and
 include a title, the date range of interest, the output format, and a rules file.  This script loads these
