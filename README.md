@@ -121,13 +121,14 @@ When the script is first executed with a new job description, it will submit the
 to be accepted or rejected.
 
 Here are the states a Historical Job passes through:
-    #Possible states:
-        # - new
-        # - estimating --> triggers a 5-minute loop, waiting for job to be quoted.
-        # - quoted
-        # - accepted/rejected
-        # - running   --> triggers a 5-minute loop, waiting for job to finish.
-        # - finished  --> triggers code to download and uncompress files.
+
+Possible states:
++ New
++ Estimating --> triggers a 5-minute loop, waiting for job to be quoted.
++ Quoted
++ Accepted/Rejected
++ Running   --> triggers a 5-minute loop, waiting for job to finish.
++ Finished  --> triggers code to download and uncompress files.
 
 
 There are two files passed into the 'constructor' of the PT Historical object:
