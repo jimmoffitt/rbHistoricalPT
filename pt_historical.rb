@@ -141,14 +141,36 @@ There are two files passed into the 'constructor' of the PT Historical object:
 
     Historical PowerTrack configuration file (MyPowerTrackConfig.yaml in this example) contains:
 
-    config:
-        account_name: <account_name>  #Used in URL for Historical API.
-        user_name: <user_name>
-        password_encoded: <EnCoDeDpAsSWoRd>
-        #password: <PlainTextPassword>  #supported, not recommended.
-        stream_label: prod
-        base_output_folder: ./output #Root folder for downloaded files.
-        friendly_folder_names: true  #converts title into folder name by removing whitespace
+        #Account details.
+        account:
+            account_name: my_account_name  #Used in URL for Historical API.
+            user_name: me@mycompany.com
+            password_encoded: PaSsWoRd_EnCoDeD #At least some resemblance of security.  Generated with Ruby "base64" gem.
+            #password: PlainTextPassword  #Use this is you want to use plain text, and comment out the encoded entry above.
+
+        #Gnip Product Configurations:
+
+        #Gnip Historical API
+        historical:
+            storage: files #options: files, database --> Store activities in local files or in database?
+            base_output_folder: ./output #Root folder for downloaded files.
+            friendly_folder_names: true  #converts job title into folder name by removing whitespace
+            #Current defaults
+            publisher: twitter
+            stream_type: track
+
+        #Local environment settings: databases, web servers, etc.
+
+        database:
+            host: 127.0.0.1
+            port: 3306
+            #Note: currently all PowerTrack example clients share a common database schema.
+            schema: power-track_development
+            user_name: root
+            password_encoded:
+            #password: test
+            type: mysql
+
 
 
     Job description file (MyJobDescription.yaml in this example) contains:
@@ -759,7 +781,7 @@ class PtHistoricalJob
             File.delete(file_name)
         end
 
-        # Alternate code that using system(command) and Linux/Mac commands.
+        # Alternate code that uses system(command) and Linux/Mac commands.
         #Code to unzip
         #command = "gunzip " + @output_folder + "/*.gz"
         #system(command)
@@ -770,7 +792,7 @@ class PtHistoricalJob
 
     end
 
-    #A simple (silly?) wrappers to remove JSON formatting from Job object user.
+    #Simple (silly?) wrappers to remove JSON formatting from Job object user.
     def acceptJob
         "{\"status\":\"accept\"}"
 
@@ -1069,6 +1091,42 @@ end
 
 
 #=======================================================================================================================
+#Database class.
+
+'''
+This class is meant to demonstrate basic code for building a "database" class for use with the
+PowerTrack set of example code.  It is written in Ruby, but in its present form hopefully will
+read like pseudo-code for other languages.
+
+One option would be to use (Rails) ActiveRecord for data management, but it seems that may abstract away more than
+desired.
+
+Having said that, the database was created (and maintained/migrated) with Rails ActiveRecord.
+It is just a great way to create databases.
+
+ActiveRecord::Schema.define(:version => 20130306234839) do
+
+  create_table "activities", :force => true do |t|
+      t.integer  "native_id",   :limit => 8
+      t.text     "content"
+      t.text     "body"
+      t.string   "rule_value"
+      t.string   "rule_tag"
+      t.string   "publisher"
+      t.string   "job_uuid"
+      t.datetime "created_at",               :null => false
+      t.datetime "updated_at",               :null => false
+      t.float    "latitude"
+      t.float    "longitude"
+      t.datetime "posted_time"
+  end
+
+end
+
+The above table fields are a bit arbitrary.  I cherry picked some Tweet details and promoted them to be table fields.
+Meanwhile the entire tweet is stored, in case other parsing is needed downstream.
+'''
+
 class PtDatabase
     require "mysql2"
     require "time"
@@ -1331,7 +1389,9 @@ class PtREST
 
     def password_encoded=(value)
         @password_encoded=value
-        @password = Base64.decode64(@password_encoded)
+        if not @password_encoded.nil? then
+            @password = Base64.decode64(@password_encoded)
+        end
     end
 
     #Helper functions for building URLs
@@ -1397,12 +1457,21 @@ class PtREST
         return response
     end
 
-    def GET
+    def GET(params=nil)
         uri = URI(@url)
+
+        #params are passed in as a hash.
+        #Example: params["max"] = 100, params["since_date"] = 20130321000000
+        if not params.nil?
+            uri.query = URI.encode_www_form(params)
+        end
+
+
         http = Net::HTTP.new(uri.host, uri.port)
         http.use_ssl = true
-        request = Net::HTTP::Get.new(uri.path)
+        request = Net::HTTP::Get.new(uri.request_uri)
         request.basic_auth(@user_name, @password)
+
         response = http.request(request)
         return response
     end
