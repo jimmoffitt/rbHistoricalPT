@@ -4,15 +4,18 @@
 This is a simple, headless, single-threaded Ruby script written to help illustrate the "work flow"
 of the Historical PowerTrack process.
 
-This version is a 100% RESTful implementation -- which significantly simplifies the HTTP parts... As streaming
-historical data becomes available (2013 Q2), this code and the HTTP object code will be extended to support
-streaming Historical data.
+This version is a 100% RESTful implementation -- which significantly simplifies the HTTP parts... 
 
 To use Historical PowerTrack you will need to provide your account authentication details such as account name,
 user name, password and the 'label' assigned to your Historical PowerTrack stream.  These account details
 are specified in a configuration file formatted in YAML (http://en.wikipedia.org/wiki/YAML).  In this example code
 this file is named MyPowerTrackConfig.yaml, but you can name it what you want and pass it in when creating the
 root PtHistoricalJob object.
+
+By default this script writes processed activities (tweets) as individual JSON files.  The script can also be 
+configured to write activities to a local database.  There is a PtDatabase class included here that encapsulates
+the database details, including an ActiveRecord schema description.  If you are using a database, the PowerTrack
+configuration file must have a "database" section containing connection details.  
 
 
 # Usage
