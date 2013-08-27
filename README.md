@@ -45,7 +45,7 @@ After a job has been quoted, this script has an additional "accept" parameter th
 
 If the "accept" parameter is set to "true" or "false" before a job has been quoted, it will be ignored.
 
-Note: once a job has been accepted and launched, it can not be stopped.
+Note: once a job has been accepted and launched, it can not be stopped via the API.
 
 
 
@@ -198,7 +198,7 @@ PowerTrack rules for the data retrieval.
         tag   : geo-louisville
         - value  : (rain OR flood OR storm OR weather)
         tag   : weather
-        - value  : (rain OR precipitation OR flood) (inches OR in OR inch OR \")
+        - value  : (rain OR precipitation OR flood) (inches OR in OR inch)
         tag   : measurement
         - value  : ThisRuleWillNotMatchAndHasNoTag
 
