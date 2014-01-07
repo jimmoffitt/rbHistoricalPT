@@ -172,7 +172,7 @@ There are two files passed into the 'constructor' of the PT Historical object:
             
 
 
-    Job description file (MyJobDescription.yaml in this example) contains:
+Job description file (MyJobDescription.yaml in this example) contains:
 
     job:
         #These will change from request to request.
