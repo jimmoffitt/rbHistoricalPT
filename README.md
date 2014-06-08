@@ -208,5 +208,5 @@ spin up multiple objects.
 
 Currently, Historical PowerTrack is only for Twitter. While this code is written in anticipation of
 expanding to other Publishers, there currently are these Job defaults:
-        #publisher = "twitter" #(only Historical publisher currently)
-        #stream_type = "track"  #(only Historical product currently)
+* publisher = "twitter" 
+* stream_type = "track"  
