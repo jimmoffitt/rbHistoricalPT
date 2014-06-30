@@ -1,0 +1,21 @@
+{"rules": [
+
+  {
+    "value" : "rain OR rained OR railfall OR contains:flood OR storm OR stormed OR storming",
+    "tag" : "hydrology"
+  },
+
+  {
+    "value" : "from:BoulderOEM OR from:NWSBoulder",
+    "tag" : "from_agency"
+  },
+  {
+    "value" : "to:BoulderOEM OR @BoulderEOM OR to:NWSBoulder" OR @NWSBoulder,
+    "tag" : "to_agency"
+  },
+  {
+    "value" : "profile_region:Colorado (profile_locality:Boulder OR profile_locality:Longmont OR profile_locality:Louisville),
+    "tag" : "profile_geo"
+  }
+]
+}
