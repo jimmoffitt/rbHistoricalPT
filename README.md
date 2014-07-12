@@ -87,13 +87,7 @@ be delivered, along with estimates for how long the job will take to extract and
 This information is provided as a "quote" JSON payload when hitting the job-specific end-point.  There is an
 example of this "quote" payload in the getStatus method header.
 
-After a job is quoted, the work flow stops until the job is accepted or rejected.
-
-    Note: if you are test-driving Historical PowerTrack (or "trialing"), job acceptance/rejection
-    will be a manual process (by Gnip staff) and can not be automated via the Historical PowerTrack API. Once
-    you are in a subscription or on-demand contract, you'll be able to automate this approval process.
-
-    Job are accepted or rejected by passing in an "accept" boolean parameter.
+After a job is quoted, the work flow stops until the job is accepted or rejected. Job are accepted or rejected by passing in an "accept" boolean parameter.
 
 If a job is accepted, the Job is launched and enters the "running" stage.  While a job is running, the actual data
 that matching the job's rules is extracted from the archives.  This process can take many hours to complete.  This
