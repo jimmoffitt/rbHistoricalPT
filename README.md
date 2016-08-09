@@ -2,6 +2,24 @@
 ***Ruby Client for Gnip's Historical Powertrack 2.0***
 ***
 
+***Note: This sample client has been updated for version 2.0***
+
+In summary, these code changes consisted of:
+
++ Updated Historical PowerTrack API endpoint:
+    + Updated base URL base variable in pt_search.rb class:: 
+        + Version 1.0: @@base_url = 'https://historical.gnip.com/accounts/'
+        + Version 2.0: @@base_url = 'https://gnip-api.gnip.com/historical/powertrack/accounts/'
+    + Updated URL construction pattern in /lib/pt_restful.rb.
+        + Version 1.0: 
+            + getHistoricalURL returns ```@url = https://historical.gnip.com/accounts/{ACCOUNT_NAME}/jobs.json```
+        + Version 2.0:
+            + getHistoricalURL returns ```@url = https://gnip-api.gnip.com/historical/powertrack/accounts/{ACCOUNT_NAME}/publishers/twitter/jobs.json```
+            
++ Updated Job Description YAML files to set "stream_type" to ```track_v2``` instead of ```track```.
+
++ Refactored/re-arranged supporting classes into a /lib folder.
+
 ## Introduction
 ==============
 
