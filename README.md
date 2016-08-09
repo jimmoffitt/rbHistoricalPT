@@ -1,4 +1,8 @@
-# Introduction
+***
+***Ruby Client for Gnip's Historical Powertrack 2.0***
+***
+
+## Introduction
 ==============
 
 This is a simple, headless, single-threaded Ruby script written to help illustrate the "work flow"
@@ -18,7 +22,7 @@ the database details, including an ActiveRecord schema description.  If you are 
 configuration file must have a "database" section containing connection details.  
 
 
-# Usage
+## Usage
 =======
 
 Two files are passed in at the command-line if you are running this code as a script (and not building some wrapper
@@ -50,7 +54,7 @@ Note: once a job has been accepted and launched, it can not be stopped via the A
 
 
 
-Historical Job Work Flow
+## Historical Job Work Flow
 ========================
 
 This script will walk you through the process of submitting a Historical PowerTrack 'job'.
@@ -97,7 +101,7 @@ When the job is complete, the status becomes "finished."  When a Job is finished
 downloading and uncompressing of the job's data files.
 
 
-More Details
+## More Details
 ============
 
 For hopefully better and not worse, this script has a fair amount of comments.  It seems most Ruby code
