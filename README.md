@@ -222,7 +222,4 @@ PowerTrack rules for the data retrieval.
 The Historical "PtHistoricalJob" object manages one Job in a single-threaded manner.  Code managing this class could
 spin up multiple objects.
 
-Currently, Historical PowerTrack is only for Twitter. While this code is written in anticipation of
-expanding to other Publishers, there currently are these Job defaults:
-* publisher = "twitter" 
-* stream_type = "track"  
+
